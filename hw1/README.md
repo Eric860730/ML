@@ -1,7 +1,7 @@
 # Machine Learning HW1
 
 ## Overview
-Find the regularized linear model regression and visualize it.
+Use Newton's and LSE method to find the normalized linear regression and visualize it.
 
 ## Usage
 
