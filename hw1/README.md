@@ -17,10 +17,10 @@ Enter the Poetry shell
 poetry shell
 ```
 
-Feed the test.csv and set lamde with command line argument.
+Feed the test.csv and set n and lamde use command line argument.
 
 ``` bash
-python3 main.py test.csv <lamda>
+python3 main.py test.csv <n> <lamda>
 ```
 
 

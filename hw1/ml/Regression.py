@@ -7,8 +7,8 @@ install(show_locals=True)
 
 def MatrixPlus(A, B):
     C = np.zeros(A.shape)
-    for i in range(A.ndim):
-        for j in range(A.ndim):
+    for i in range(A.shape[0]):
+        for j in range(A.shape[1]):
             C[i][j] = A[i][j] + B[i][j]
     return C
 
@@ -45,6 +45,56 @@ def LUDecomposition(A, L, U):
             L[i+j+1][i] = -MultiTime
         count = count - 1
 
+def LSE_solveX(A, b, lamda):
+    # calculate A^TA
+    A_T = MatrixTranspose(A)
+    A_TA = MatrixMultiple(A_T, A)
+
+    # calculate lamdaI
+    lamdaI = LamdaI(A_TA.shape[0], lamda)
+
+    # calculate A^TA + lamdaI
+    A_TAPlusLamdaI = MatrixPlus(A_TA, lamdaI)
+
+    # init L and U
+    L = np.identity(A_TAPlusLamdaI.shape[0])
+    U = A_TAPlusLamdaI.copy()
+
+    # LUDecomposition
+    LUDecomposition(A_TAPlusLamdaI, L, U)
+
+    # b = ATb
+    b = MatrixMultiple(A_T, b)
+
+    # Ly = b
+    rank = L.shape[0]
+    tmp = L.copy()
+    count = rank - 1
+    for i in range(rank):
+        for j in range(count):
+            MultiTime = -(tmp[i+j+1][i] / tmp[i][i])
+            tmp[i+j+1][:] = tmp[i+j+1][:] + MultiTime * tmp[i][:]
+            b[i+j+1][:] = b[i+j+1][:] + MultiTime * b[i][:]
+        count = count - 1
+
+    # Ux = y
+    rank = U.shape[0]
+    tmp = U.copy()
+    count = rank - 1
+    for i in reversed(range(rank)):
+        DiaTimes = 1 / tmp[i][i]
+        tmp[i][:] = tmp[i][:] * DiaTimes
+        b[i][:] = b[i][:] * DiaTimes
+        for j in range(count):
+            MultiTime = -(tmp[i-j-1][i] / tmp[i][i])
+            tmp[i-j-1][:] = tmp[i-j-1][:] + MultiTime * tmp[i][:]
+            b[i-j-1][:] = b[i-j-1][:] + MultiTime * b[i][:]
+        count = count - 1
+
+    return b
+
+
+
 def InverseU(U):
     rank = U.shape[0]
     tmp = U.copy()
@@ -68,7 +118,7 @@ def InverseL(L):
     count = rank - 1
     for i in range(rank):
         for j in range(count):
-            MultiTime = -(result[i+j+1][i] / result[i][i])
+            MultiTime = -(tmp[i+j+1][i] / tmp[i][i])
             tmp[i+j+1][:] = tmp[i+j+1][:] + MultiTime * tmp[i][:]
             result[i+j+1][:] = result[i+j+1][:] + MultiTime * result[i][:]
         count = count - 1
@@ -95,7 +145,7 @@ def LSE(A, b, lamda):
     # calculate the inverse matrix of U and V
     U_Inverse = InverseU(U)
     L_Inverse = InverseL(L)
-    # print("L_Inverse :\n", L_Inverse, "\n", U_Inverse)
+    print("L_Inverse :\n", L_Inverse, "\n", U_Inverse)
 
     # A^-1 = U^-1 * L^-1
     InverseA_TA = MatrixMultiple(U_Inverse, L_Inverse)
@@ -103,9 +153,36 @@ def LSE(A, b, lamda):
     # calculate x
     x = MatrixMultiple(InverseA_TA, A_T)
     x = MatrixMultiple(x, b)
-    print("===========================")
     print(x)
+    return x
 
+
+def InitA_b(data, n):
+    A = np.ndarray(shape=(data.shape[0], n))
+    b = np.ndarray(shape=(data.shape[0], 1))
+    for i in range(data.shape[0]):
+        b[i] = data[i][1]
+        for j in range(A.shape[1]):
+            A[i][n-j-1] = data[i][0]**j
+    return A, b
+
+
+def TotalError(data, x):
+    sum = 0
+    for i in range(data.shape[0]):
+        dist = x[x.shape[0] - 1] - data[i][1]
+        for j in range(x.shape[0] - 1):
+            dist = dist + x[j] * (data[i][0]**(x.shape[0] - j - 1))
+        sum = sum + dist * dist
+    print("Totla error:",float(sum));
+
+def Print_FitLine(x):
+    print("Fitting line: ", end = '')
+    for i in range(x.shape[0]):
+        if i == x.shape[0] - 1:
+            print(float(x[i]))
+        else:
+            print(str(float(x[i]))+"X^"+str((x.shape[0]-i-1))+" + ", end = '')
 
 # regularized linear model regression
 def R_Regression():
@@ -113,10 +190,8 @@ def R_Regression():
     data = np.genfromtxt(sys.argv[1], delimiter = ',')
 
     # set A and b
-    A = data.copy()
-    b = np.ndarray(shape=(A.shape[0],1))
-    for i in range(data.shape[0]):
-        b[i] = A[i][1]
-        A[i][1] = 1
+    A, b = InitA_b(data, int(sys.argv[2]))
 
-    LSE(A, b, sys.argv[2])
+    x = LSE_solveX(A, b, sys.argv[3])
+    Print_FitLine(x)
+    TotalError(data, x)
