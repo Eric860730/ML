@@ -1,12 +1,41 @@
 import numpy as np
-import matplotlib
-matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import sys
 
 # python rich for debug
 from rich.traceback import install
 install(show_locals=True)
+
+def LSE(A, b, lamda):
+    # calculate A^TA
+    A_T = MatrixTranspose(A)
+    A_TA = MatrixMultiple(A_T, A)
+
+    # calculate lamdaI
+    lamdaI = LamdaI(A_TA.shape[0], lamda)
+
+    # calculate A^TA + lamdaI
+    A_TAPlusLamdaI = MatrixPlus(A_TA, lamdaI)
+
+
+    # LUDecomposition
+    L, U = LUDecomposition(A_TAPlusLamdaI)
+    ATb = MatrixMultiple(A_T, b)
+    x = LU_inverse(L, U, ATb)
+    return x
+
+def Newton(A, b):
+    # Hf(x) = 2*AT*A
+    Hessian_func = 2 * MatrixMultiple(MatrixTranspose(A), A)
+    Hess_L, Hess_U = LUDecomposition(Hessian_func)
+
+    # gradient_F = 2*AT*A*x - 2*AT*b
+    x = np.random.rand(Hessian_func.shape[0], 1)
+    gradient_F = MatrixMultiple(Hessian_func, x) - 2 * MatrixMultiple(MatrixTranspose(A), b)
+
+    # x = x0 - HF(x)^-1 * gradient_F
+    x = x - LU_inverse(Hess_L, Hess_U, gradient_F)
+    return x
 
 def MatrixPlus(A, B):
     C = np.zeros(A.shape)
@@ -38,7 +67,10 @@ def MatrixMultiple(A, B):
                 C[i][j] = C[i][j] + A[i][k] * B[k][j]
     return C
 
-def LUDecomposition(A, L, U):
+def LUDecomposition(A):
+    # init L and U
+    L = np.identity(A.shape[0])
+    U = A.copy()
     rank = A.shape[0]
     count = rank - 1
     for i in range(rank - 1):
@@ -47,28 +79,9 @@ def LUDecomposition(A, L, U):
             U[i+j+1][:] = U[i+j+1][:] + MultiTime * U[i][:]
             L[i+j+1][i] = -MultiTime
         count = count - 1
+    return L, U
 
-def LSE_solveX(A, b, lamda):
-    # calculate A^TA
-    A_T = MatrixTranspose(A)
-    A_TA = MatrixMultiple(A_T, A)
-
-    # calculate lamdaI
-    lamdaI = LamdaI(A_TA.shape[0], lamda)
-
-    # calculate A^TA + lamdaI
-    A_TAPlusLamdaI = MatrixPlus(A_TA, lamdaI)
-
-    # init L and U
-    L = np.identity(A_TAPlusLamdaI.shape[0])
-    U = A_TAPlusLamdaI.copy()
-
-    # LUDecomposition
-    LUDecomposition(A_TAPlusLamdaI, L, U)
-
-    # b = ATb
-    b = MatrixMultiple(A_T, b)
-
+def LU_inverse(L, U, b):
     # Ly = b
     rank = L.shape[0]
     tmp = L.copy()
@@ -96,70 +109,6 @@ def LSE_solveX(A, b, lamda):
 
     return b
 
-
-
-def InverseU(U):
-    rank = U.shape[0]
-    tmp = U.copy()
-    result = np.identity(U.shape[0])
-    count = rank - 1
-    for i in reversed(range(rank)):
-        DiaTimes = 1 / tmp[i][i]
-        tmp[i][:] = tmp[i][:] * DiaTimes
-        result[i][:] = result[i][:] * DiaTimes
-        for j in range(count):
-            MultiTime = -(tmp[i-j-1][i] / tmp[i][i])
-            tmp[i-j-1][:] = tmp[i-j-1][:] + MultiTime * tmp[i][:]
-            result[i-j-1][:] = result[i-j-1][:] + MultiTime * result[i][:]
-        count = count - 1
-    return result
-
-def InverseL(L):
-    rank = L.shape[0]
-    tmp = L.copy()
-    result = np.identity(L.shape[0])
-    count = rank - 1
-    for i in range(rank):
-        for j in range(count):
-            MultiTime = -(tmp[i+j+1][i] / tmp[i][i])
-            tmp[i+j+1][:] = tmp[i+j+1][:] + MultiTime * tmp[i][:]
-            result[i+j+1][:] = result[i+j+1][:] + MultiTime * result[i][:]
-        count = count - 1
-    return result
-
-def LSE(A, b, lamda):
-    # calculate A^TA
-    A_T = MatrixTranspose(A)
-    A_TA = MatrixMultiple(A_T, A)
-
-    # calculate lamdaI
-    lamdaI = LamdaI(A_TA.shape[0], lamda)
-
-    # calculate A^TA + lamdaI
-    A_TAPlusLamdaI = MatrixPlus(A_TA, lamdaI)
-
-    # init L and U
-    L = np.identity(A_TAPlusLamdaI.shape[0])
-    U = A_TAPlusLamdaI.copy()
-
-    # LUDecomposition
-    LUDecomposition(A_TAPlusLamdaI, L, U)
-
-    # calculate the inverse matrix of U and V
-    U_Inverse = InverseU(U)
-    L_Inverse = InverseL(L)
-    print("L_Inverse :\n", L_Inverse, "\n", U_Inverse)
-
-    # A^-1 = U^-1 * L^-1
-    InverseA_TA = MatrixMultiple(U_Inverse, L_Inverse)
-
-    # calculate x
-    x = MatrixMultiple(InverseA_TA, A_T)
-    x = MatrixMultiple(x, b)
-    print(x)
-    return x
-
-
 def InitA_b(data, n):
     A = np.ndarray(shape=(data.shape[0], n))
     b = np.ndarray(shape=(data.shape[0], 1))
@@ -180,22 +129,32 @@ def TotalError(data, x):
     print("Totla error:",float(sum));
 
 def Print_Solution(x):
-    print("Fitting line: ", end = '')
     for i in range(x.shape[0]):
         if i == x.shape[0] - 1:
             print(float(x[i]))
         else:
             print(str(float(x[i]))+"X^"+str((x.shape[0]-i-1))+" + ", end = '')
 
-def myPlot(data, x):
-    px = np.arange(-6, 8)
-    py = 0
-    for i in range(x.shape[0]):
-        if i == x.shape[0] - 1:
-            py = py + x[i]
+def visualization(data, L_S, N_S):
+    lx = np.arange(-6, 8)
+    ly = 0
+    ny = 0
+    for i in range(L_S.shape[0]):
+        if i == L_S.shape[0] - 1:
+            ly = ly + L_S[i]
+            ny = ny + N_S[i]
         else:
-            py = py + x[i] * (px**(x.shape[0]-i-1))
-    plt.plot(px, py, linewidth = 3, label = 'LSE')
+            ly = ly + L_S[i] * (lx**(L_S.shape[0]-i-1))
+            ny = ny + N_S[i] * (lx**(N_S.shape[0]-i-1))
+
+    # plot LSE
+    plt.subplot(211)
+    plt.plot(lx, ly, linewidth = 3)
+    plt.scatter(data[:,0], data[:,1], color = 'red')
+
+    # plot Newton
+    plt.subplot(212)
+    plt.plot(lx, ny, linewidth = 3)
     plt.scatter(data[:,0], data[:,1], color = 'red')
     plt.show()
 
@@ -208,7 +167,17 @@ def R_Regression():
     # set A and b
     A, b = InitA_b(data, int(sys.argv[2]))
 
-    x = LSE_solveX(A, b, sys.argv[3])
-    Print_Solution(x)
-    TotalError(data, x)
-    myPlot(data, x)
+    LSE_sol = LSE(A, b, sys.argv[3])
+    Newton_sol = Newton(A, b)
+
+    # print LSE result.
+    print("LSE:\nFitting line: ", end = '')
+    Print_Solution(LSE_sol)
+    TotalError(data, LSE_sol)
+
+    # print Newton's result
+    print("\nNewton's Method:\nFitting line: ", end = '')
+    Print_Solution(Newton_sol)
+    TotalError(data, Newton_sol)
+
+    visualization(data, LSE_sol, Newton_sol)
