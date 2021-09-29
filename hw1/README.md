@@ -17,11 +17,9 @@ Enter the Poetry shell
 poetry shell
 ```
 
-Feed the test.csv and set n and lamde use command line argument.
+Use the command line arguments to feed the test.csv file, set the degree of the regression model to n, and set the lambda.
 
 ``` bash
-python3 main.py test.csv <n> <lamda>
+python3 main.py test.csv <n> <lambda>
 ```
-
-
 
