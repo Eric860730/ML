@@ -1,4 +1,7 @@
 import numpy as np
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
 import sys
 
 # python rich for debug
@@ -176,13 +179,26 @@ def TotalError(data, x):
         sum = sum + dist * dist
     print("Totla error:",float(sum));
 
-def Print_FitLine(x):
+def Print_Solution(x):
     print("Fitting line: ", end = '')
     for i in range(x.shape[0]):
         if i == x.shape[0] - 1:
             print(float(x[i]))
         else:
             print(str(float(x[i]))+"X^"+str((x.shape[0]-i-1))+" + ", end = '')
+
+def myPlot(data, x):
+    px = np.arange(-6, 8)
+    py = 0
+    for i in range(x.shape[0]):
+        if i == x.shape[0] - 1:
+            py = py + x[i]
+        else:
+            py = py + x[i] * (px**(x.shape[0]-i-1))
+    plt.plot(px, py, linewidth = 3, label = 'LSE')
+    plt.scatter(data[:,0], data[:,1], color = 'red')
+    plt.show()
+
 
 # regularized linear model regression
 def R_Regression():
@@ -193,5 +209,6 @@ def R_Regression():
     A, b = InitA_b(data, int(sys.argv[2]))
 
     x = LSE_solveX(A, b, sys.argv[3])
-    Print_FitLine(x)
+    Print_Solution(x)
     TotalError(data, x)
+    myPlot(data, x)
