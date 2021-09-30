@@ -1,8 +1,10 @@
 import sys
 import ml
 
+
 def main():
-    ml.R_Regression()
+    ml.regularizedRegression()
+
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:
