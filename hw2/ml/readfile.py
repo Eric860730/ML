@@ -27,7 +27,7 @@ def read_data(root):
             exit()
         else:
             data = np.fromfile(file, dtype = np.dtype('B'), count = -1)
-            train_image = data.reshape((image_num, row, col))
+            train_image = data.reshape((image_num, row * col))
 
 
     with open(test_label_path, 'rb') as file:
@@ -46,6 +46,6 @@ def read_data(root):
             exit()
         else:
             data = np.fromfile(file, dtype = np.dtype('B'), count = -1)
-            test_image = data.reshape((image_num, row, col))
+            test_image = data.reshape((image_num, row * col))
 
     return train_label, train_image, test_label, test_image
