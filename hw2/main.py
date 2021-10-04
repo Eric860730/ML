@@ -4,8 +4,8 @@ import os.path
 
 
 def usage():
-    print("Usage: python3 hw2-1 <mode>")
-    print("Usage: python3 hw2-2 <a> <b>")
+    print("Usage: python3 main.py hw2-1 <mode>")
+    print("Usage: python3 main.py hw2-2 <a> <b>")
     exit()
 
 

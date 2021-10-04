@@ -25,3 +25,5 @@ Usage: python3 main.py hw2-1 <mode>
 Usage: python3 main.py hw2-2 <a> <b>
 ```
 
+## Data source
+[THE MNIST DATABASE](http://yann.lecun.com/exdb/mnist/)
