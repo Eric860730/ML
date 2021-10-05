@@ -32,7 +32,6 @@ def calculateLikelihood(train_label, train_image):
             bin_value = train_image[i, j] // 8
             likelihood[label, j, bin_value] += 1
 
-    total_likelihood = np.sum(likelihood, axis=2)
     # find min_likelihood
     min_likelihood = 60000
     for i in range(CLASS_NUM):
@@ -49,6 +48,7 @@ def calculateLikelihood(train_label, train_image):
                 if likelihood[i][j][k] == 0:
                     likelihood[i][j][k] = min_likelihood
 
+    total_likelihood = np.sum(likelihood, axis=2)
     for i in range(CLASS_NUM):
         for j in range(pixel):
             likelihood[i, j, :] /= total_likelihood[i, j]
@@ -59,8 +59,9 @@ def predictInDiscreteMode(prior, likelihood, test_label, test_image):
     error_num = 0
     pixel = len(test_image[0])
     test_image_num = len(test_image)
+
+    # calculate posterior
     for i in range(test_image_num):
-        # calculate posterior
         posterior = np.zeros(CLASS_NUM, dtype=float)
         for j in range(CLASS_NUM):
             for k in range(pixel):
@@ -70,14 +71,17 @@ def predictInDiscreteMode(prior, likelihood, test_label, test_image):
 
         posterior_sum = np.sum(posterior)
         posterior[:] = posterior[:] / posterior_sum
-        print("Postirior (in log scale):")
+        print("Posterior (in log scale):")
         for k in range(CLASS_NUM):
             print(f"{k}: {posterior[k]}")
         predict = np.argmin(posterior)
         print(f"Prediction: {predict}, Ans: {test_label[i]}\n")
 
+        # count error numbers
         if(predict != test_label[i]):
             error_num += 1
+
+    # calculate error rate
     error_rate = error_num / test_image_num
     return error_rate
 
@@ -86,6 +90,8 @@ def predictInContinuousMode(mean, variance, prior, test_label, test_image):
     error_num = 0
     pixel = len(test_image[0])
     test_image_num = len(test_image)
+
+    # calculate posterior
     for i in range(test_image_num):
         posterior = np.zeros(CLASS_NUM, dtype=float)
         for j in range(CLASS_NUM):
@@ -99,14 +105,17 @@ def predictInContinuousMode(mean, variance, prior, test_label, test_image):
 
         posterior_sum = np.sum(posterior)
         posterior[:] = posterior[:] / posterior_sum
-        print("Postirior (in log scale):")
+        print("Posterior (in log scale):")
         for k in range(CLASS_NUM):
             print(f"{k}: {posterior[k]}")
         predict = np.argmin(posterior)
         print(f"Prediction: {predict}, Ans: {test_label[i]}\n")
 
+        # count error numbers
         if(predict != test_label[i]):
             error_num += 1
+
+    # calculate error rate
     error_rate = error_num / test_image_num
     return error_rate
 
@@ -192,6 +201,7 @@ def calculateNaiveBayesClassifier(
 
     # discrete mode
     if (mode == 0):
+        # check model exists or not
         if ((os.path.exists("model/prior.npy")
                 and (os.path.exists("model/likelihood.npy")))):
             prior = np.load("model/prior.npy")
@@ -201,6 +211,8 @@ def calculateNaiveBayesClassifier(
             likelihood = calculateLikelihood(train_label, train_image)
             np.save("model/prior.npy", prior)
             np.save("model/likelihood.npy", likelihood)
+
+        # calculate the predict result and show predict imagination
         error_rate = predictInDiscreteMode(
             prior, likelihood, test_label, test_image)
         showDiscreteImagination(likelihood)
@@ -208,6 +220,7 @@ def calculateNaiveBayesClassifier(
         exit()
     # continuous mode
     elif (mode == 1):
+        # check model exists or not
         if (os.path.exists("model/prior.npy") and (os.path.exists("model/mean.npy"))
                 and (os.path.exists("model/variance.npy"))):
             prior = np.load("model/prior.npy")
@@ -220,6 +233,8 @@ def calculateNaiveBayesClassifier(
             np.save("model/mean.npy", mean)
             np.save("model/variance.npy", variance)
             np.save("model/prior.npy", prior)
+
+        # calculate the predict result and show predict imagination
         error_rate = predictInContinuousMode(
             mean, variance, prior, test_label, test_image)
         showContinuousImagination(mean)
