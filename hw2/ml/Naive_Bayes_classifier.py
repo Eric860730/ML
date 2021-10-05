@@ -121,14 +121,14 @@ def predictInContinuousMode(mean, variance, prior, test_label, test_image):
 
 
 def showDiscreteImagination(likelihood):
-    zero = np.sum(likelihood[:, :, 0:16], axis=2)
-    one = np.sum(likelihood[:, :, 16:32], axis=2)
     pixel = len(likelihood[1])
-    imagination = np.zeros((CLASS_NUM, pixel), dtype=int)
+    imagination = np.argmax(likelihood, axis = 2)
     for i in range(CLASS_NUM):
         for j in range(pixel):
-            if(one[i][j] > zero[i][j]):
+            if(imagination[i][j] >= 16):
                 imagination[i][j] = 1
+            else:
+                imagination[i][j] = 0
 
     print("Imagination of numbers in Bayesian classifier:\n")
     row = int(pixel ** 0.5)
