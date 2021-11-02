@@ -28,7 +28,7 @@ thus, predict_var = 1/a + X*post_var*X^T
 """
 def predictiveDistribution(a, design_matrix, prior_mean, prior_cov):
     predict_mean = np.matmul(design_matrix, prior_mean)
-    predict_var = 1 / a + np.matmul(np.matmul(design_matrix, np.linalg.inv(prior_cov)), np.transpose(design_matrix))
+    predict_var = a + np.matmul(np.matmul(design_matrix, np.linalg.inv(prior_cov)), np.transpose(design_matrix))
     return predict_mean, predict_var
 
 """
@@ -137,7 +137,7 @@ def bayesianLinearRegression(a, b, n, w):
     posterior_mean = a * np.matmul(np.linalg.inv(posterior_cov), np.transpose(design_matrix)) * y
     posterior_var = np.linalg.inv(posterior_cov)
     predict_mean = np.matmul(design_matrix, prior_mean)
-    predict_var = 1 / a + np.matmul(np.matmul(design_matrix, posterior_var), np.transpose(design_matrix))
+    predict_var = a + np.matmul(np.matmul(design_matrix, posterior_var), np.transpose(design_matrix))
     printResult(x, y, posterior_mean, posterior_var, predict_mean, predict_var)
 
     while checkBias(n, prior_mean, posterior_mean, iteration_num):
