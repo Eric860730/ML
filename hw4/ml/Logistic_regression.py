@@ -1,11 +1,11 @@
 import ml
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.special import expit
+from scipy.special import expit, expm1
 from scipy.linalg import inv
 import math
 
-#python rich for debug
+# python rich for debug
 from rich.traceback import install
 install(show_locals=True)
 
@@ -19,13 +19,14 @@ def creatDesignMatrix(Data, n):
             for j in range(n):
                 design_matrix[i][j] = Data[i][0] ** j
     elif isinstance(Data, int) or isinstance(Data, float):
-        design_matrix = np.zeros((1,n), dtype=float)
+        design_matrix = np.zeros((1, n), dtype=float)
         for i in range(n):
             design_matrix[0][i] = Data ** i
     return design_matrix
 
+
 def Find_error_point(w, D1, D2):
-    #count the number of D1 and D2 in the lines of left and right.
+    # count the number of D1 and D2 in the lines of left and right.
     num_left_d1 = 0
     num_left_d2 = 0
     num_right_d1 = 0
@@ -39,7 +40,7 @@ def Find_error_point(w, D1, D2):
 
     # calculate all points on the side of w
     for i in range(D1.shape[0]):
-        #D1
+        # D1
         # xi = [1 xi xi^2]
         xi = creatDesignMatrix(D1[i][0], w.shape[0])
         # yi < L, means (xi, yi) on the left hand side of w.
@@ -50,7 +51,7 @@ def Find_error_point(w, D1, D2):
             num_right_d1 += 1
             r_d1 = i
 
-        #D2
+        # D2
         # xi = [1 xi xi^2]
         xi = creatDesignMatrix(D2[i][0], w.shape[0])
         # yi < L, means (xi, yi) on the left hand side of w.
@@ -85,7 +86,6 @@ def Find_error_point(w, D1, D2):
             return -1, -1
 
 
-
 # key formula: Wn+1 = Wn + ∇wJ = Wn + X^T(yi - (1 + e^-Xiw) ^ -1)
 # when ∇wJ = 0, it is convergence.
 # where X is design matrix, Xi is ith element of X, initial w is n basis of arbitrary elements.
@@ -114,22 +114,23 @@ def calculateNewtonRegression(X, Y, n):
     count = 0
     while True:
         count += 1
-        old_w = w
+        old_w = w.copy()
         # logistic function logis_f = 1/(1+e^-Xijwj)
         logis_f = expit(np.matmul(X, w))
         gradientJ = np.matmul(X.transpose(), Y - logis_f)
         for i in range(2*n):
             D[i][i] = np.matmul(logis_f[i], 1 - logis_f[i])
-        Hessian_f = np.matmul(np.matmul(np.transpose(X), D), X)
+        Hessian_f = np.matmul(X.transpose(), np.matmul(D, X))
         # if Hessian function is none singular, calculate new_w = w + H(J)^-1 * ∇J
         try:
-            new_w = w + np.matmul(inv(Hessian_f), gradientJ)
+            w = w + np.matmul(np.linalg.inv(Hessian_f),
+                              np.matmul(X.transpose(), Y - expit(np.matmul(X, w))))
         # else, use steepest gradient descent
         except:
-            new_w = w + gradientJ
-        w = new_w
-        if (abs((w - old_w) < 1e-5).all() or count > 100000):
-            return w
+            w = w + np.matmul(X.transpose(), Y - expit(np.matmul(X, w)))
+        if ((w - old_w) < 1e-5).all() or count > 10000:
+            break
+    return w
 
 
 # According our regression result w to classify X
@@ -148,7 +149,7 @@ def classifyResult(X, w):
         else:
             class2.append(X[i, 0:2])
             if i >= n:
-                s2 +=1
+                s2 += 1
     class1 = np.array(class1)
     class2 = np.array(class2)
     return s1, s2, class1, class2
@@ -167,44 +168,46 @@ def visualizeResult(X, w1, w2, n):
     # draw Ground truth scatter plot
     plt.subplot(131)
     plt.title("Ground truth")
-    plt.scatter(X[0:n, 0], X[0:n, 1], c = 'r')
-    plt.scatter(X[n:2*n, 0], X[n:2*n, 1], c = 'b')
+    plt.scatter(X[0:n, 0], X[0:n, 1], c='r')
+    plt.scatter(X[n:2*n, 0], X[n:2*n, 1], c='b')
 
     # Gradient descent
     s1, s2, class1, class2 = classifyResult(X, w1)
-    print(f"Gradient descent:\n\nw:\n{float(w1[0]):15.10f}\n{float(w1[1]):15.10f}\n{float(w1[2]):15.10f}\n")
+    print(
+        f"Gradient descent:\n\nw:\n{float(w1[0]):15.10f}\n{float(w1[1]):15.10f}\n{float(w1[2]):15.10f}\n")
     visualizeConfusionMatrix(s1, s2, n)
 
     # draw Gradient descent
     plt.subplot(132)
     plt.title("Gradient descent")
-    plt.scatter(class1[:, 0], class1[:, 1], c = 'r')
-    plt.scatter(class2[:, 0], class2[:, 1], c = 'b')
+    plt.scatter(class1[:, 0], class1[:, 1], c='r')
+    plt.scatter(class2[:, 0], class2[:, 1], c='b')
 
     print(f"\n----------------------------------------")
     # Newton's method
     s1, s2, class1, class2 = classifyResult(X, w2)
-    print(f"Newton's method:\n\nw:\n{float(w2[0]):15.10f}\n{float(w2[1]):15.10f}\n{float(w2[2]):15.10f}\n")
+    print(
+        f"Newton's method:\n\nw:\n{float(w2[0]):15.10f}\n{float(w2[1]):15.10f}\n{float(w2[2]):15.10f}\n")
     visualizeConfusionMatrix(s1, s2, n)
 
     # draw Newton's method
     plt.subplot(133)
     plt.title("Newton's method")
-    plt.scatter(class1[:, 0], class1[:, 1], c = 'r')
-    plt.scatter(class2[:, 0], class2[:, 1], c = 'b')
+    plt.scatter(class1[:, 0], class1[:, 1], c='r')
+    plt.scatter(class2[:, 0], class2[:, 1], c='b')
 
     plt.show()
 
 
-def Logistic_regression(n, mx1, vx1, my1, vy1, mx2, vx2, my2, vy2):
+def Logistic_regression(n, mx1, my1, mx2, my2, vx1, vy1, vx2, vy2):
     # Generate D1 and D2
-    D1 = np.zeros((n,2))
-    D2 = np.zeros((n,2))
+    D1 = np.zeros((n, 2))
+    D2 = np.zeros((n, 2))
     for i in range(n):
-        D1[i][0] = ml.generateUnivariateGaussianData(mx1, vx1);
-        D1[i][1] = ml.generateUnivariateGaussianData(my1, vy1);
-        D2[i][0] = ml.generateUnivariateGaussianData(mx2, vx2);
-        D2[i][1] = ml.generateUnivariateGaussianData(my2, vy2);
+        D1[i][0] = ml.generateUnivariateGaussianData(mx1, vx1)
+        D1[i][1] = ml.generateUnivariateGaussianData(my1, vy1)
+        D2[i][0] = ml.generateUnivariateGaussianData(mx2, vx2)
+        D2[i][1] = ml.generateUnivariateGaussianData(my2, vy2)
 
     # Xw = w1x + w2y + w3, X = [x, y, 1]
     # Y = Bernoulli(f(Xw))
@@ -214,12 +217,9 @@ def Logistic_regression(n, mx1, vx1, my1, vy1, mx2, vx2, my2, vy2):
     X[n:2 * n, 0:2] = D2
     X[:, 2] = 1
     Y[n:2 * n, 0] = 1
-    np.append([design_X, creatDesignMatrix(D1, 3)])
-    print(design_X.shape[0])
-    print(design_X)
-    np.concatenate([design_X, creatDesignMatrix(D2, 3)])
-    print(design_X.shape[0])
-    exit()
+    design_X = np.zeros((2 * n, 3))
+    design_X[0:n, :] = creatDesignMatrix(D1, 3)
+    design_X[n:2 * n, :] = creatDesignMatrix(D2, 3)
     w1 = Gradient_descent(X, Y)
     w2 = calculateNewtonRegression(X, Y, n)
     visualizeResult(X, w1, w2, n)

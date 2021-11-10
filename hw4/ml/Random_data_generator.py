@@ -12,6 +12,8 @@ We need do linear transformation.
 i.e. N~(0,1) -> N~(mean, variance)
 Thus, X = mean + sqrt(variance) * generateData.
 """
+
+
 def generateUnivariateGaussianData(mean, variance):
     # generate data point with N~(0,1)
     s = np.random.uniform(0, 1, 12)
@@ -30,6 +32,7 @@ def generatePolyBasisLinearModelData(n, a, w):
         y += w[i] * (x ** i)
     y += generateUnivariateGaussianData(0, a)
     return x, y
+
 
 def dataGenerator():
     generateUnivariateGaussianData(0, 1)
