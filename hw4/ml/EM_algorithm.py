@@ -2,11 +2,12 @@ import numpy as np
 from numba import jit
 
 
-#python rich for debug
+# python rich for debug
 from rich.traceback import install
 install(show_locals=True)
 
 NUM_CLASS = 10
+
 
 @jit
 def transformTwoBins(train_image, pixels, num_image):
@@ -40,7 +41,7 @@ def expectationStep(two_bins_image, P, Lambda, w, pixels, num_image):
 @jit
 def maximizationStep(two_bins_image, P, Lambda, w, pixels, num_image):
     # Get sum of w
-    sum_w = np.sum(w, axis = 0)
+    sum_w = np.sum(w, axis=0)
     for i in range(NUM_CLASS):
         for j in range(pixels):
             # Initialize P[i, j] to 0
@@ -61,7 +62,7 @@ def printImaginations(P, count, distance_P, pixels):
         print(f"class {i}:")
         for row in range(28):
             for col in range(28):
-                print(classify_class[i][row * 28 + col], end = ' ')
+                print(classify_class[i][row * 28 + col], end=' ')
             print()
         print()
     print(f"No. of Iteration: {count}, Difference: {distance_P}")
@@ -94,7 +95,7 @@ def countLabel(two_bins_image, P, Lambda, pixels, num_image, train_label):
 # According to count_matrix, match our class to the real class.
 @jit
 def matchLabel(count_matrix):
-    match_array = np.full(10, -1, dtype = int)
+    match_array = np.full(10, -1, dtype=int)
 
     for _ in range(10):
         # select the index of the max value in count_matrix, index = (row, col)
@@ -148,7 +149,7 @@ def printResultImagination(match_array, P, pixels):
         print(f"labeled class {i}:")
         for row in range(28):
             for col in range(27):
-                print(f"{imagination[result_class][row * col + col]}", end = " ")
+                print(f"{imagination[result_class][row * col + col]}", end=" ")
             print(f"{imagination[result_class][row * 27 + 27]}")
         print()
     print()
@@ -165,8 +166,10 @@ def printConfusionMatrix(prediction_matrix, count, num_image):
         print(f"                  Predict number {i} Predict not number {i}")
         print(f"Is number {i}           {tp:5>}              {fn:5>}")
         print(f"Isn't number {i}        {fp:5>}              {tn:5>}")
-        print(f"\nSensitivity (Successfully predict number {i}    : {float(tp) / (tp + fn):.5f})")
-        print(f"Specificity (Successfully predict not number {i}: {float(tn) / (fp + tn):.5f})")
+        print(
+            f"\nSensitivity (Successfully predict number {i}    : {float(tp) / (tp + fn):.5f})")
+        print(
+            f"Specificity (Successfully predict not number {i}: {float(tn) / (fp + tn):.5f})")
 
     print(f"\nTotal iteration to converge: {count}")
     print(f"Total error rate: {float(error_count) / num_image:.16f}")
@@ -232,7 +235,8 @@ def EM_algorithm(train_label, train_image, test_label, test_image):
         w = expectationStep(two_bins_image, P, Lambda, w, pixels, num_image)
 
         # M-step, get new P, Lambda
-        P, Lambda = maximizationStep(two_bins_image, P, Lambda, w, pixels, num_image)
+        P, Lambda = maximizationStep(
+            two_bins_image, P, Lambda, w, pixels, num_image)
 
         # calculate distance between new P and previous P
         distance_P = np.linalg.norm(P - previous_P)
@@ -245,18 +249,18 @@ def EM_algorithm(train_label, train_image, test_label, test_image):
             break
 
     # According final probability P, record finally category result and corresponding with answer category.
-    count_matrix = countLabel(two_bins_image, P, Lambda, pixels, num_image, train_label)
+    count_matrix = countLabel(
+        two_bins_image, P, Lambda, pixels, num_image, train_label)
 
     # Match our classified result to real class.
     match_array = matchLabel(count_matrix)
 
     # Get final preduction result matrix
-    prediction_matrix = predictLabel(match_array, two_bins_image, P, Lambda, pixels, num_image, train_label)
+    prediction_matrix = predictLabel(
+        match_array, two_bins_image, P, Lambda, pixels, num_image, train_label)
 
     # Print result imagination of each class
     printResultImagination(match_array, P, pixels)
 
     # Print Confusion Matrix
     printConfusionMatrix(prediction_matrix, count, num_image)
-
-
