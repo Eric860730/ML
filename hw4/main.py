@@ -27,29 +27,3 @@ if __name__ == '__main__':
         train_label, train_image, test_label, test_image = ml.read_data(
             './data/')
         ml.EM_algorithm(train_label, train_image, test_label, test_image)
-
-'''
-    if (len(sys.argv) < 2):
-        usage()
-
-    if (sys.argv[1] == 'hw3-1-a'):
-        if (len(sys.argv) != 4):
-            usage()
-        print(ml.generateUnivariateGaussianData(float(sys.argv[2]), float(sys.argv[3])))
-        exit()
-
-    elif (sys.argv[1] == 'hw3-2'):
-        if (len(sys.argv) != 4):
-            usage()
-        ml.sequentialEstimator(float(sys.argv[2]), float(sys.argv[3]))
-        exit()
-
-    elif (sys.argv[1] == 'hw3-3'):
-        if (len(sys.argv) != 6):
-            usage()
-        w = np.array(sys.argv[5].split(','), dtype=float)
-        ml.bayesianLinearRegression(int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), w)
-
-    else:
-        usage()
-'''
