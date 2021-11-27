@@ -89,6 +89,17 @@ optional = false
 python-versions = ">=3.7"
 
 [[package]]
+name = "libsvm-official"
+version = "3.25.0"
+description = "Python binding of LIBSVM"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+scipy = "*"
+
+[[package]]
 name = "llvmlite"
 version = "0.33.0"
 description = "lightweight wrapper around basic LLVM functionality"
@@ -346,7 +357,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "4e9274262a9f520073387d70faa988def38bbcba90412db261c0d2bb27582385"
+content-hash = "539c69723c1e6c28f497a21593448d3203f87aeba1c713d6f2cf06a5dc14c88a"
 
 [metadata.files]
 atomicwrites = [
@@ -422,6 +433,12 @@ kiwisolver = [
     {file = "kiwisolver-1.3.2-pp37-pypy37_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:25405f88a37c5f5bcba01c6e350086d65e7465fd1caaf986333d2a045045a223"},
     {file = "kiwisolver-1.3.2-pp37-pypy37_pp73-win_amd64.whl", hash = "sha256:bcadb05c3d4794eb9eee1dddf1c24215c92fb7b55a80beae7a60530a91060560"},
     {file = "kiwisolver-1.3.2.tar.gz", hash = "sha256:fc4453705b81d03568d5b808ad8f09c77c47534f6ac2e72e733f9ca4714aa75c"},
+]
+libsvm-official = [
+    {file = "libsvm-official-3.25.0.tar.gz", hash = "sha256:3aebecee6006c37dfe03521225133aca01fa846f4733ad984b80893ed1493b6d"},
+    {file = "libsvm_official-3.25.0-cp36-cp36m-win_amd64.whl", hash = "sha256:fa1eba4422e6199b63ae315dd6dd8bde4471902ef1e16646d3d673e44e864d31"},
+    {file = "libsvm_official-3.25.0-cp37-cp37m-win_amd64.whl", hash = "sha256:19885012ffd8e5f12413c7c91d95a956ef4dd3420e2a565ae0f112e5a14fb139"},
+    {file = "libsvm_official-3.25.0-cp38-cp38-win_amd64.whl", hash = "sha256:1e96703bcb0ea3353c12d466f9c1fcab6c28bba5840861114395635218285a70"},
 ]
 llvmlite = [
     {file = "llvmlite-0.33.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:1a31702cc1383893a4c3d8103226207399848aaa4d16633051d0a25d78cfc726"},

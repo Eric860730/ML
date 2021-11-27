@@ -11,6 +11,7 @@ scipy = "^1.6.1"
 matplotlib = "^3.4"
 pyqt5 = "^5.15"
 numba = "^0.50"
+libsvm-official = "^3.25"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
