@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
+import math
+from scipy.optimize import minimize
 
 # python rich for debug
 from rich.traceback import install
@@ -64,22 +66,79 @@ def computeGaussianProcess(X: np.ndarray, Y: np.ndarray, X_star: np.ndarray, bet
     return predict_mean_xStar, predict_variance_xStar
 
 
-def visualizeGaussianProcess(X: np.ndarray, Y: np.ndarray, X_star: np.ndarray, predict_mean_xStar: np.ndarray, predict_variance_xStar: np.ndarray):
+def computeNegativeMarginalLogLikelihood(theta: np.ndarray, X: np.ndarray, Y: np.ndarray, beta: float):
+    """
+    According input theta, compute negative marginal log-likelihood
+    ln p(y|θ) = -0.5 * ln |Cθ| -0.5 * y^T * Cθ^-1 * y -0.5 * N * ln(2π)
+
+    parameter
+    X and Y: Input data points
+    X_star: All point X we want to predict. In this implement, the boundary of X_star is [-60, 60].
+    beta: The inverse of variance of ϵ.
+    theta: The hyper-parameters which I estimated.
+    """
+    N = X.shape[0]
+    # kθ(x, x)
+    k_theta = rationalQuadraticKernel(X, X, length = theta[0], alpha = theta[1])
+    # covariance matrix Cθ
+    C_theta = k_theta + (1 / beta) * np.identity(N)
+    # negative log-likelihood -ln p(y|θ) = 0.5 * ln |Cθ| +0.5 * y^T * Cθ^-1 * y +0.5 * N * ln(2π)
+    nega_log_likelihood = 0.5 * np.log(np.linalg.det(C_theta)) + 0.5 * np.matmul(np.transpose(Y), np.matmul(np.linalg.inv(C_theta), Y)) + 0.5 * N * np.log(2 * math.pi)
+    return nega_log_likelihood[0]
+
+
+def optimizeKernelParameter(X: np.ndarray, Y: np.ndarray, beta: float, theta: np.ndarray):
+    """
+    Optimize kernel function hyper-parameters theta(length, alpha).
+
+    parameter
+    X and Y: Input data points
+    X_star: All point X we want to predict. In this implement, the boundary of X_star is [-60, 60].
+    beta: The inverse of variance of ϵ.
+    theta: The hyper-parameters which I estimated.
+    """
+    opt_result = minimize(computeNegativeMarginalLogLikelihood, theta, args = (X, Y, beta))
+    return opt_result.x
+
+
+def visualizeGaussianProcess(X: np.ndarray, Y: np.ndarray, X_star: np.ndarray, predict_mean: np.ndarray, predict_variance: np.ndarray, opt_predict_mean: np.ndarray, opt_predict_variance: np.ndarray):
     # Draw Gaussian Process Regression
     plt.subplot(211)
     plt.title('Gaussian Process Regression')
-    plt.scatter(X, Y, s = 10.0)
-    var = np.diagonal(predict_variance_xStar).copy().reshape(-1, 1)
-    drawRegression(X_star, predict_mean_xStar, var)
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    var = np.diagonal(predict_variance).copy()
+    # 95% confidence interval = 1.96x variance
+    confidence_interval_95 = 1.96 * var
+    drawRegression(X_star[:, 0], predict_mean[:, 0], confidence_interval_95)
+    plt.scatter(X, Y, s = 10.0, color = 'black')
+
+    # Draw Optimize Gaussian Process Regression
+    plt.subplot(212)
+    plt.title('Optimize Gaussian Process Regression')
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    opt_var = np.diagonal(opt_predict_variance).copy()
+    # 95% confidence interval = 1.96x variance
+    opt_confidence_interval_95 = 1.96 * opt_var
+    drawRegression(X_star[:, 0], opt_predict_mean[:, 0], opt_confidence_interval_95)
+    plt.scatter(X, Y, s = 10.0, color = 'black')
+
+    # modify format
+    plt.tight_layout()
+
+    # save figure
     plt.savefig('foo.png')
 
 
-def drawRegression(x, y, var):
-    plt.plot(x, y, linewidth = 0.5, color = 'black')
-    plt.plot(x, y + var, linewidth = 0.5, color = 'red')
-    plt.plot(x, y - var, linewidth = 0.5, color = 'red')
+def drawRegression(x, y, boundary):
+    plt.plot(x, y, linewidth = 1, color = 'blue')
+    plt.plot(x, y + boundary, linewidth = 1, color = 'red')
+    plt.plot(x, y - boundary, linewidth = 1, color = 'red')
+    plt.fill_between(x, y + boundary, y - boundary, color = 'coral', alpha = 0.5)
     plt.xlim(-60.0, 60.0)
     plt.ylim(-3.0, 3.0)
+
 
 def gaussianProcessRegression(input_data: np.ndarray):
     """
@@ -101,5 +160,14 @@ def gaussianProcessRegression(input_data: np.ndarray):
     # default length and alpha are 1.0
     length = 1.0
     alpha = 1.0
-    predict_mean_xStar, predict_variance_xStar = computeGaussianProcess(X, Y, X_star, beta, length, alpha)
-    visualizeGaussianProcess(X, Y, X_star, predict_mean_xStar, predict_variance_xStar)
+    predict_mean, predict_variance = computeGaussianProcess(X, Y, X_star, beta, length, alpha)
+
+    # Optimize the kernel parameters by minimizing negative marginal log-likelihood
+    # Estimate the proper hyper-parameters theta = (1, 1)
+    guess_theta = np.array([1, 1])
+    opt_length, opt_alpha = optimizeKernelParameter(X, Y, beta, guess_theta)
+    opt_predict_mean, opt_predict_variance = computeGaussianProcess(X, Y, X_star, beta, opt_length, opt_alpha)
+
+    # visualization
+    visualizeGaussianProcess(X, Y, X_star, predict_mean, predict_variance, opt_predict_mean, opt_predict_variance)
+
