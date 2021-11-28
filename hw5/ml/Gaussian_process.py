@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
 import math
 from scipy.optimize import minimize
+import time
 
 # python rich for debug
 from rich.traceback import install
@@ -177,7 +178,7 @@ def drawRegression(x, y, boundary):
     plt.plot(x, y - boundary, linewidth=1, color='red')
     plt.fill_between(x, y + boundary, y - boundary, color='coral', alpha=0.5)
     plt.xlim(-60.0, 60.0)
-    plt.ylim(-3.0, 3.0)
+    plt.ylim(-4.0, 4.0)
 
 
 def gaussianProcessRegression(input_data: np.ndarray):
@@ -206,17 +207,32 @@ def gaussianProcessRegression(input_data: np.ndarray):
 
     # compute Gaussian Process
     # default length and alpha are 1.0
-    length = 1.0
-    alpha = 1.0
+    length = 1
+    alpha = 1
+    print(f'default length: {length}')
+    print(f'default alpha: {alpha}\n')
+
+    # time for default version
+    d_start_time = time.time()
     predict_mean, predict_variance = computeGaussianProcess(
         X, Y, X_star, beta, length, alpha)
+    d_end_time = time.time()
 
     # Optimize the kernel parameters by minimizing negative marginal log-likelihood
     # Estimate the proper hyper-parameters theta = (1, 1)
     guess_theta = np.array([1, 1])
     opt_length, opt_alpha = optimizeKernelParameter(X, Y, beta, guess_theta)
+    print(f'optimize length: {opt_length}')
+    print(f'optimize alpha: {opt_alpha}')
+
+    # time for optimize version
+    opt_start_time = time.time()
     opt_predict_mean, opt_predict_variance = computeGaussianProcess(
         X, Y, X_star, beta, opt_length, opt_alpha)
+    opt_end_time = time.time()
+
+    print(f'default time: {d_end_time - d_start_time:.5f}')
+    print(f'optimize time: {opt_end_time - opt_start_time:.5f}')
 
     # visualization
     visualizeGaussianProcess(
