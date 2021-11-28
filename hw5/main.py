@@ -7,7 +7,7 @@ import numpy as np
 
 def usage():
     print("Usage: python3 main.py hw5-1 (automatically read input data in path 'data/input.data')")
-    print("Usage: python3 main.py hw5-2")
+    print("Usage: python3 main.py hw5-2 (automatically read input data in path 'data/*.csv')")
     exit()
 
 
