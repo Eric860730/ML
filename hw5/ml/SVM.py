@@ -35,12 +35,17 @@ def computeSVMAndTime(
         print('Error kernel type!')
         exit(-1)
 
+    train_start_time = time.time()
     start_time = time.time()
     # -t: choose kernel function, -q: quite mode(no outputs)
     parameters = svm_parameter('-t ' + str(kernel_type) + ' -q')
     problem = svm_problem(Y_train, X_train)
     model = svm_train(problem, parameters)
+    train_end_time = time.time()
     p_label, p_acc, p_val = svm_predict(Y_test, X_test, model)
+    predict_end_time = time.time()
+    print(f'train cost {train_end_time - train_start_time:.5f} sec.')
+    print(f'predict cost {predict_end_time - train_end_time:.5f} sec.')
     end_time = time.time()
     print(f'total cost {end_time - start_time:.2f} sec.\n')
 
@@ -50,7 +55,12 @@ def printGridSearchResult(best_accuracy: float, best_parameter: dict):
     print(f'Best parameters: {best_parameter}\n')
 
 
-def gridSearch(kernel_type: int, X_train: np.ndarray, Y_train: np.ndarray):
+def gridSearch(
+        kernel_type: int,
+        X_train: np.ndarray,
+        Y_train: np.ndarray,
+        X_test: np.ndarray,
+        Y_test: np.ndarray):
     """
     Use grid search method to find the best performing parameters in each kernel function.
 
@@ -101,6 +111,15 @@ def gridSearch(kernel_type: int, X_train: np.ndarray, Y_train: np.ndarray):
                 best_accuracy = accuracy
                 best_parameter = {'cost': c}
 
+        # reset stdout
+        sys.stdout = save_stdout
+        # Prediction
+        opt_parameters = svm_parameter(
+            '-t ' + str(kernel_type) + ' -c ' + str(best_parameter['cost']) + ' -q')
+        problem = svm_problem(Y_train, X_train)
+        model = svm_train(problem, opt_parameters)
+        p_label, p_acc, p_val = svm_predict(Y_test, X_test, model)
+
     elif kernel_type == 1:
         print('kernel function: polynomial')
         # set parameters
@@ -137,6 +156,23 @@ def gridSearch(kernel_type: int, X_train: np.ndarray, Y_train: np.ndarray):
                             best_accuracy = accuracy
                             best_parameter = {
                                 'cost': c, 'gamma': g, 'coef0': r, 'degree': d}
+        # reset stdout
+        sys.stdout = save_stdout
+        # Prediction
+        opt_parameters = svm_parameter('-t ' +
+                                       str(kernel_type) +
+                                       ' -c ' +
+                                       str(best_parameter['cost']) +
+                                       ' -g ' +
+                                       str(best_parameter['gamma']) +
+                                       ' -r ' +
+                                       str(best_parameter['coef0']) +
+                                       ' -d ' +
+                                       str(best_parameter['degree']) +
+                                       ' -q')
+        problem = svm_problem(Y_train, X_train)
+        model = svm_train(problem, opt_parameters)
+        p_label, p_acc, p_val = svm_predict(Y_test, X_test, model)
 
     elif kernel_type == 2:
         print('kernel function: RBF')
@@ -165,13 +201,23 @@ def gridSearch(kernel_type: int, X_train: np.ndarray, Y_train: np.ndarray):
                 if accuracy > best_accuracy:
                     best_accuracy = accuracy
                     best_parameter = {'cost': c, 'gamma': g}
+        # reset stdout
+        sys.stdout = save_stdout
+        # Prediction
+        opt_parameters = svm_parameter('-t ' +
+                                       str(kernel_type) +
+                                       ' -c ' +
+                                       str(best_parameter['cost']) +
+                                       ' -g ' +
+                                       str(best_parameter['gamma']) +
+                                       ' -q')
+        problem = svm_problem(Y_train, X_train)
+        model = svm_train(problem, opt_parameters)
+        p_label, p_acc, p_val = svm_predict(Y_test, X_test, model)
 
     else:
         print('Invalid kernel_type[0 ~ 2], exit')
         exit(-1)
-
-    # reset stdout
-    sys.stdout = save_stdout
 
     # print best parameter and accuracy
     printGridSearchResult(best_accuracy, best_parameter)
@@ -233,6 +279,7 @@ def combineLinearAndRBF(
                 best_c = c
                 best_gamma = g
 
+    train_start_time = time.time()
     start_time = time.time()
 
     # use the best parameter to training model
@@ -242,6 +289,7 @@ def combineLinearAndRBF(
     parameters = svm_parameter(f'-t 4 -c {best_c} -q')
     problem = svm_problem(Y_train, combination, isKernel=True)
     model = svm_train(problem, parameters)
+    train_end_time = time.time()
 
     sys.stdout = save_stdout
 
@@ -250,17 +298,24 @@ def combineLinearAndRBF(
     print(f'Best accuracy: {best_accuracy}%')
     print(f'Best parameters: cost = {best_c}, gamma = {best_gamma}')
 
-    # transpose X_test
+    transform_start_time = time.time()
+    # transform X_test
     test_rows = X_test.shape[0]
     linear = computeLinearKernel(X_test, X_test)
     rbf = computeRBF(X_test, X_test, best_gamma)
     new_X_test = np.hstack(
         (np.arange(1, test_rows + 1).reshape(-1, 1), linear + rbf))
+    transform_end_time = time.time()
 
     # predict
     p_label, p_acc, p_val = svm_predict(Y_test, new_X_test, model)
-    print(f'Predict accuracy: {p_acc}%')
 
+    predict_end_time = time.time()
+
+    print(f'train cost {train_end_time - train_start_time:.5f} sec.')
+    print(
+        f'transform X_test cost {transform_end_time - transform_start_time:.5f} sec.')
+    print(f'predict cost {predict_end_time - transform_end_time:.5f} sec.')
     end_time = time.time()
     print(f'total cost {end_time - start_time:.2f} sec.\n')
 
@@ -289,11 +344,11 @@ def SVM(
 
     print('\n===== Use grid search method to find the best performing parameters in each kernel function =====')
     # linear = 0
-    gridSearch(0, X_train, Y_train)
+    gridSearch(0, X_train, Y_train, X_test, Y_test)
     # polynomial = 1
-    gridSearch(1, X_train, Y_train)
+    gridSearch(1, X_train, Y_train, X_test, Y_test)
     # radial basis function(RBF) = 2
-    gridSearch(2, X_train, Y_train)
+    gridSearch(2, X_train, Y_train, X_test, Y_test)
 
     print('\n===== Combine Linear and RBF kernel function and compare the performance with others =====')
     combineLinearAndRBF(X_train, Y_train, X_test, Y_test)
