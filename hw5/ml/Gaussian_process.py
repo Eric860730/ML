@@ -168,8 +168,11 @@ def visualizeGaussianProcess(
     # modify format
     plt.tight_layout()
 
+    # show figure
+    plt.show()
+
     # save figure
-    plt.savefig('foo.png')
+    # plt.savefig('foo.png')
 
 
 def drawRegression(x, y, boundary):
