@@ -14,12 +14,12 @@
 ## Environment
 
 ### Requirment
-python3 >= 3.8
-numpy >= 1.21
-scipy >= 1.6.1
-matplotlib >= 3.4
-pyqt5 >= 5.15
-libsvm-official >= 3.25
+- python3 >= 3.8
+- numpy >= 1.21
+- scipy >= 1.6.1
+- matplotlib >= 3.4
+- pyqt5 >= 5.15
+- libsvm-official >= 3.25
 
 ### Build virtual environment
 Build the virtual environment with Poetry.
