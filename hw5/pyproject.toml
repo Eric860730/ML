@@ -10,7 +10,6 @@ numpy = "^1.21"
 scipy = "^1.6.1"
 matplotlib = "^3.4"
 pyqt5 = "^5.15"
-numba = "^0.50"
 libsvm-official = "^3.25"
 
 [tool.poetry.dev-dependencies]
@@ -21,7 +20,4 @@ rich = "^10.11"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-
-
 
