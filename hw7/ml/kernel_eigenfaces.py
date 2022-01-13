@@ -243,7 +243,7 @@ def computeSimpleLDACov(count_num_of_class: int, train_images: np.ndarray,
 def computeKernelLDACov(count_num_of_class: int, train_images: np.ndarray,
                         train_labels: np.ndarray, kernel_type: int, gamma: float):
     """
-    reference: https://zhuanlan.zhihu.com/p/92359921
+    reference: https://en.wikipedia.org/wiki/Kernel_Fisher_discriminant_analysis
     matrix N: sigma Kk(I - 1/num_k * I)Kk^T, Kk means k-th kernel
     """
     class_num = len(count_num_of_class)

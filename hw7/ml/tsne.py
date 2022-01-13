@@ -17,6 +17,7 @@ import pylab
 
 import os
 import matplotlib.pyplot as plt
+from PIL import Image
 
 
 def Hbeta(D=np.array([]), beta=1.0):
@@ -107,12 +108,13 @@ def pca(X=np.array([]), no_dims=50):
     return Y
 
 
-def tsne(X=np.array([]), no_dims=2, initial_dims=50, perplexity=30.0):
+def tsne(labels: np.ndarray, X=np.array([]), no_dims=2, initial_dims=50, perplexity=30.0):
     """
         Runs t-SNE on the dataset in the NxD array X to reduce its
         dimensionality to no_dims dimensions. The syntaxis of the function is
         `Y = tsne.tsne(X, no_dims, perplexity), where X is an NxD NumPy array.
     """
+    image = []
 
     # Check inputs
     if isinstance(no_dims, float):
@@ -175,21 +177,40 @@ def tsne(X=np.array([]), no_dims=2, initial_dims=50, perplexity=30.0):
         if (iter + 1) % 10 == 0:
             C = np.sum(P * np.log(P / Q))
             print("Iteration %d: error is %f" % (iter + 1, C))
+            image.append(drawCurrentImage(Y, labels, 't-SNE', perplexity))
 
         # Stop lying about P-values
         if iter == 100:
             P = P / 4.
 
+    dirname = './output_images/SNE'
+    filename = f'{dirname}/t-SNE_{perplexity}.gif'
+    os.makedirs(dirname, exist_ok = True)
+    image[0].save(filename, save_all = True, append_images = image[1:], optimize = False, loop = 0, duration = 200)
+
     # Return solution
     return Y, P, Q
 
 
-def ssne(X=np.array([]), no_dims=2, initial_dims=50, perplexity=30.0):
+def drawCurrentImage(Y: np.ndarray, labels: np.ndarray, title: str, perplexity: float) -> Image:
+    plt.clf()
+    plt.title(title)
+    plt.scatter(Y[:, 0], Y[:, 1], 20, labels)
+    plt.tight_layout()
+    canvas = plt.get_current_fig_manager().canvas
+    canvas.draw()
+
+    return Image.frombytes('RGB', canvas.get_width_height(), canvas.tostring_rgb())
+
+
+def ssne(labels: np.ndarray, X=np.array([]), no_dims=2, initial_dims=50, perplexity=30.0):
     """
-        Runs t-SNE on the dataset in the NxD array X to reduce its
+        Runs symmetric SNE on the dataset in the NxD array X to reduce its
         dimensionality to no_dims dimensions. The syntaxis of the function is
         `Y = tsne.tsne(X, no_dims, perplexity), where X is an NxD NumPy array.
     """
+    # Store images for produce gif
+    image = []
 
     # Check inputs
     if isinstance(no_dims, float):
@@ -225,7 +246,7 @@ def ssne(X=np.array([]), no_dims=2, initial_dims=50, perplexity=30.0):
         # Compute pairwise affinities
         sum_Y = np.sum(np.square(Y), 1)
         num = -2. * np.dot(Y, Y.T)
-        num = 1. / (1. + np.add(np.add(num, sum_Y).T, sum_Y))
+        num = np.exp(-1. * np.add(np.add(num, sum_Y).T, sum_Y))
         num[range(n), range(n)] = 0.
         Q = num / np.sum(num)
         Q = np.maximum(Q, 1e-12)
@@ -252,10 +273,16 @@ def ssne(X=np.array([]), no_dims=2, initial_dims=50, perplexity=30.0):
         if (iter + 1) % 10 == 0:
             C = np.sum(P * np.log(P / Q))
             print("Iteration %d: error is %f" % (iter + 1, C))
+            image.append(drawCurrentImage(Y, labels, 'symmetric-SNE', perplexity))
 
         # Stop lying about P-values
         if iter == 100:
             P = P / 4.
+
+    dirname = './output_images/SNE'
+    filename = f'{dirname}/symmetric-SNE_{perplexity}.gif'
+    os.makedirs(dirname, exist_ok = True)
+    image[0].save(filename, save_all = True, append_images = image[1:], optimize = False, loop = 0, duration = 200)
 
     # Return solution
     return Y, P, Q
@@ -263,18 +290,32 @@ def ssne(X=np.array([]), no_dims=2, initial_dims=50, perplexity=30.0):
 
 def visualize(Y: np.ndarray, P: np.ndarray, Q: np.ndarray,
               labels: np.ndarray, title: str):
+    plt.clf()
+    plt.figure(title)
+
     dirname = './output_images/SNE'
     os.makedirs(dirname, exist_ok=True)
-    pylab.title(title)
-    pylab.scatter(Y[:, 0], Y[:, 1], 20, labels)
-    pylab.savefig(f'{dirname}/{title}.png')
-    pylab.show()
+    plt.title(title)
+    plt.scatter(Y[:, 0], Y[:, 1], 20, labels)
+    plt.savefig(f'{dirname}/{title}.png')
+
+    sorted_idx = np.argsort(labels)
+
+    plt.figure('similarity')
+    # Plot P
+    log_P = np.log(P)
+    sorted_P = log_P[sorted_idx][:, sorted_idx]
+    plt.subplot(121)
     plt.title('The similarity of High dimensions')
     plt.imshow(P, cmap='hot', interpolation='nearest')
-    plt.show()
+
+    # Plot Q
+    log_Q = np.log(Q)
+    sorted_Q = log_Q[sorted_idx][:, sorted_idx]
+    plt.subplot(122)
     plt.title('The similarity of Low dimensions')
     plt.imshow(Q, cmap='hot', interpolation='nearest')
-    plt.show()
+    plt.savefig(f'{dirname}/{title}_similarity.png')
 
 
 def TSNE() -> None:
@@ -282,7 +323,8 @@ def TSNE() -> None:
     print("Running example on 2,500 MNIST digits...")
     X = np.loadtxt("./mnist_data/mnist2500_X.txt")
     labels = np.loadtxt("./mnist_data/mnist2500_labels.txt")
-    Y, P, Q = tsne(X, 2, 50, 20.0)
-    visualize(Y, P, Q, labels, 't-SNE')
-    Y, P, Q = ssne(X, 2, 50, 20.0)
-    visualize(Y, P, Q, labels, 's-SNE')
+    perplexity = 5.0
+    Y, P, Q = tsne(labels, X, 2, 50, perplexity)
+    visualize(Y, P, Q, labels, f't-SNE_{perplexity}')
+    Y, P, Q = ssne(labels, X, 2, 50, perplexity)
+    visualize(Y, P, Q, labels, f's-SNE_{perplexity}')
