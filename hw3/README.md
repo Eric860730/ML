@@ -1,4 +1,4 @@
-# Machine Learning HW2
+# Machine Learning HW3
 
 ## Overview
 1. Random Data Generator
